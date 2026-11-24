@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:">
+<title>Hindi Captions</title>
+<style>
+  :root {
+    --bg: rgba(18, 16, 24, .90); --ink: #fff; --dim: rgba(255,255,255,.55); --en: #b9c3d6;
+    --brand: #7B19D8; --live: #e53935; --pause: #f2a900; --err: #ff8a80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body { padding: 6px; font-family: "Nirmala UI", "Segoe UI", sans-serif; color: var(--ink); user-select: none; }
+  .card { height: 100%; display: flex; gap: 14px; background: var(--bg); border-radius: 14px;
+    padding: 10px 14px; box-shadow: 0 4px 18px rgba(0,0,0,.4); }
+  .grip { width: 8px; margin: -2px 0; border-radius: 4px; cursor: move; -webkit-app-region: drag;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 2px, transparent 2px 5px); }
+  .caps { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+  .line { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; }
+  #prev { color: var(--dim); font-size: 16px; line-height: 1.35; -webkit-line-clamp: 1; }
+  #cur  { font-size: 23px; font-weight: 600; line-height: 1.35; -webkit-line-clamp: 2; }
+  #en   { color: var(--en); font-family: "Segoe UI", sans-serif; font-size: 13px; line-height: 1.3; -webkit-line-clamp: 1; font-style: italic; }
+  #msg  { font-size: 13px; color: var(--err); -webkit-line-clamp: 1; }
+  #msg:empty { display: none; }
+  #msg[data-kind="ok"] { color: #a5d6a7; }
+  .side { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; gap: 8px; flex: none; }
+  .status { display: flex; align-items: center; gap: 6px; font: 600 12px "Segoe UI", sans-serif; color: var(--dim); }
+  .status i { width: 9px; height: 9px; border-radius: 50%; background: #9e9e9e; }
+  body[data-s="live"] .status i { background: var(--live); animation: pulse 1.2s infinite; }
+  body[data-s="paused"] .status i { background: var(--pause); }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .btns { display: flex; gap: 6px; }
+  button { height: 34px; padding: 0 12px; border: 0; border-radius: 9px; cursor: pointer;
+    font: 600 13px "Segoe UI", sans-serif; color: #fff; background: rgba(255,255,255,.12); white-space: nowrap; }
+  button:hover { background: rgba(255,255,255,.22); }
+  button.primary { background: var(--brand); }
+  button.primary:hover { background: #8f2ff0; }
+  button[hidden] { display: none; }
+  .icon { width: 34px; padding: 0; }
+  #mic { color: rgba(255,255,255,.55); }
+  #mic.on { color: #fff; background: var(--live); }
+</style>
+</head>
+<body data-s="idle">
+  <div class="card">
+    <div class="grip" title="Drag to move"></div>
+    <div class="caps">
+      <div id="prev" class="line"></div>
+      <div id="cur" class="line">Click Start. Hindi captions of any audio playing on this PC appear here.</div>
+      <div id="en" class="line"></div>
+      <div id="msg" class="line"></div>
+    </div>
+    <div class="side">
+      <div class="status"><i></i><span id="st">Off</span></div>
+      <div class="btns">
+        <button id="start" class="primary">Start</button>
+        <button id="pause" hidden>Pause</button>
+        <button id="resume" class="primary" hidden>Resume</button>
+        <button id="stop" hidden>End</button>
+        <button id="dl">Download</button>
+        <button id="mic">Mic</button>
+        <button id="gear" class="icon" title="Settings: Gemini key / server">⚙</button>
+        <button id="hide" class="icon" title="Hide the panel. Listening continues; click the हि button to bring it back.">–</button>
+        <button id="quit" class="icon" title="Quit">✕</button>
+      </div>
+    </div>
+  </div>
+<script src="panel.js"></script>
+</body>
+</html>

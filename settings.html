@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>Hindi Captions: Settings</title>
+<style>
+  :root { --bg: #17151d; --card: #221f2a; --ink: #f4f2f8; --dim: #a7a2b3; --brand: #7B19D8; --ok: #81c784; --err: #ff8a80; --line: #3a3546; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: 14px "Segoe UI", "Nirmala UI", sans-serif; }
+  body { display: flex; flex-direction: column; gap: clamp(8px, 2.2vh, 14px); padding: clamp(14px, 4vh, 22px) 22px; }
+  h1 { margin: 0; font-size: 19px; }
+  p { margin: 0; color: var(--dim); line-height: 1.4; }
+  a { color: #c59bff; }
+  label { display: block; font-weight: 600; margin-bottom: 5px; }
+  input { width: 100%; height: 38px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: 14px Consolas, monospace; }
+  input:focus { outline: 2px solid var(--brand); border-color: transparent; }
+  .hint { font-size: 12px; color: var(--dim); margin-top: 4px; }
+  .res { font-size: 13px; min-height: 18px; }
+  .res.ok { color: var(--ok); } .res.err { color: var(--err); }
+  .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: auto; }
+  button { height: 38px; padding: 0 16px; border: 0; border-radius: 8px; cursor: pointer; font: 600 14px "Segoe UI", sans-serif; color: #fff; background: #3a3546; }
+  button.primary { background: var(--brand); }
+  button:disabled { opacity: .5; cursor: default; }
+  details { color: var(--dim); font-size: 13px; }
+  summary { cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>Hindi Captions: setup</h1>
+  <p>Enter your Google Gemini API key. Get a free key at <a id="ai" href="#">aistudio.google.com/apikey</a> (sign in with Google → "Create API key" → copy).</p>
+  <div>
+    <label for="key">Gemini API key</label>
+    <input id="key" type="password" placeholder="AIza..." autocomplete="off" spellcheck="false">
+    <div class="hint" id="khint">The key is saved encrypted, on this PC only.</div>
+    <div class="res" id="kres"></div>
+  </div>
+  <details id="adv">
+    <summary>Server (change only if asked to)</summary>
+    <div style="margin-top:8px">
+      <input id="hub" type="text" spellcheck="false">
+      <input id="hkey" type="password" placeholder="Server key" autocomplete="off" spellcheck="false" style="margin-top:6px">
+      <div class="res" id="hres"></div>
+    </div>
+  </details>
+  <div class="row">
+    <button id="test">Check</button>
+    <button id="save" class="primary">Save</button>
+  </div>
+<script src="settings.js"></script>
+</body>
+</html>
