@@ -9,9 +9,16 @@ System audio (WASAPI loopback) -> speech-to-text -> Gemini translation -> Hindi 
 - **Translation:** Gemini (`gemini-2.5-flash`, thinking off), with the last two sentences sent as context.
 - **Captions** appear about 4 seconds after the speech.
 
+## Download (Windows)
+The app is **not** in the repository files. It is a separate download:
+
+1. Open **[Releases → latest](https://github.com/24pai001-ritik/zoom/releases/latest)** and download **`HindiCaptions.zip`** (about 100 MB).
+2. Right-click the zip, choose **Extract All**, and open the extracted `HindiCaptions` folder. Don't run it from inside the zip.
+3. Double-click **`Hindi Captions.exe`** in that folder. If Windows shows "Windows protected your PC", click **More info → Run anyway**.
+
 ## Use
 1. Get a free Gemini API key at https://aistudio.google.com/apikey.
-2. Run `Hindi Captions.exe`. On first run, paste the key and click **Save**. The key is stored encrypted, on that PC only.
+2. On first run, a setup window opens. Paste the key and click **Save**. The key is stored encrypted, on that PC only.
 3. Click the purple **हि** button on the right edge of the screen to start.
    - **Pause / Resume** stop and restart listening.
    - **End** finishes the meeting. **Download** then saves Hindi + English as `.txt`, or as `.srt` subtitles.
@@ -21,7 +28,8 @@ System audio (WASAPI loopback) -> speech-to-text -> Gemini translation -> Hindi 
 
 Every session is also autosaved to `%APPDATA%\Hindi Captions\sessions\`.
 
-## Run from source
+## Run from source (developers)
+Needs Node.js. This runs the same app without the exe:
 ```
 npm install
 npm start
