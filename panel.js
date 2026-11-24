@@ -5,7 +5,9 @@ const api = window.lhc;
 const FRAME_MS = 20;
 const RATE = 16000;
 let stream = null, ctx = null, node = null;
-let micOn = false, micStream = null, micSrc = null;
+let micOn = false, micStream = null, micSrc = null, micGain = null, micMeter = null, meterRaf = 0;
+let micVol = 100; // percent; raise it if the level bar barely moves
+try { const v = Number(localStorage.getItem('micVol')); if (v >= 0 && v <= 400 && localStorage.getItem('micVol') !== null) micVol = v; } catch { /* storage blocked */ }
 let state = 'idle';
 let t0 = null; // first start, for timestamps
 
@@ -99,16 +101,41 @@ async function micConnect() {
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     micSrc = ctx.createMediaStreamSource(micStream);
-    micSrc.connect(node);
+    micGain = ctx.createGain(); micGain.gain.value = micVol / 100;
+    micMeter = ctx.createAnalyser(); micMeter.fftSize = 512;
+    micSrc.connect(micGain); micGain.connect(node); micGain.connect(micMeter);
+    drawMeter();
   } catch (e) { msg('Microphone not available: ' + e.message); micOn = false; showMic(); }
 }
 function micDisconnect() {
-  try { micSrc?.disconnect(); } catch { /* already gone */ }
+  try { micSrc?.disconnect(); micGain?.disconnect(); } catch { /* already gone */ }
   micStream?.getTracks().forEach((t) => t.stop());
-  micSrc = null; micStream = null;
+  micSrc = null; micStream = null; micGain = null; micMeter = null;
+  cancelAnimationFrame(meterRaf); $('miclvl').style.width = '0%';
 }
+// Live mic level (after the volume), so the user can see the mic is hearing them.
+const meterBuf = new Float32Array(512);
+function drawMeter() {
+  if (!micMeter) return;
+  micMeter.getFloatTimeDomainData(meterBuf);
+  let s = 0; for (let i = 0; i < meterBuf.length; i++) s += meterBuf[i] * meterBuf[i];
+  const rms = Math.sqrt(s / meterBuf.length);
+  $('miclvl').style.width = Math.min(100, rms * 600) + '%';
+  $('miclvl').dataset.ok = rms > 0.006 ? '1' : '0'; // same floor as the speech detector
+  meterRaf = requestAnimationFrame(drawMeter);
+}
+function setVol(v) {
+  micVol = v;
+  $('micvol').value = v; $('micpct').textContent = v + '%';
+  if (micGain) micGain.gain.value = v / 100;
+  try { localStorage.setItem('micVol', String(v)); } catch { /* storage blocked */ }
+}
+$('micvol').oninput = (e) => setVol(Number(e.target.value));
+setVol(micVol);
+
 function showMic() {
   $('mic').classList.toggle('on', micOn);
+  $('micbox').hidden = !micOn;
   $('mic').title = micOn ? 'Mic is on: your own voice is translated too. Click to turn off.' : 'Mic is off: only speaker audio is translated. Click to include your own voice.';
 }
 $('mic').onclick = async () => { micOn = !micOn; showMic(); if (micOn) await micConnect(); else micDisconnect(); };

@@ -6,6 +6,10 @@ const fs = require('fs');
 const { execFileSync } = require('child_process');
 
 if (process.env.LHC_PROFILE) app.setPath('userData', process.env.LHC_PROFILE); // test: fresh profile
+if (process.env.LHC_FAKE_MIC) { // test: a WAV file stands in for the microphone
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+  app.commandLine.appendSwitch('use-file-for-fake-audio-capture', process.env.LHC_FAKE_MIC);
+}
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 // ---------- settings ----------
@@ -243,6 +247,12 @@ const ASR_QUEUE_MAX = 4;
 let hubDenied = false;
 const dbg = (m) => { if (process.env.LHC_DEBUG) try { fs.appendFileSync(process.env.LHC_DEBUG, `${new Date().toISOString().slice(11, 23)} ${m}
 `); } catch { /* test only */ } };
+// On noise or silence Gemini sometimes echoes the instruction or writes a sound tag like "[clicking]"; drop those.
+function cleanAsr(t) {
+  if (/transcribe the english|output only the spoken words|no clear speech/i.test(t)) return '';
+  t = t.replace(/\[[^\]]*\]|\([^)]*(noise|music|silence|inaudible|clicking|laughter|applause)[^)]*\)/gi, '').replace(/\s+/g, ' ').trim();
+  return /[a-z0-9]/i.test(t) ? t : '';
+}
 async function geminiTranscribe(wav) {
   const key = geminiKey();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.geminiModel}:generateContent`;
@@ -263,7 +273,7 @@ async function geminiTranscribe(wav) {
     } catch (e) { dbg('gemini-asr fail ' + e.name); await new Promise((res) => setTimeout(res, 500)); continue; }
     if (r.ok) {
       const j = await r.json();
-      return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim();
+      return cleanAsr((j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim());
     }
     const errText = await r.text().catch(() => '');
     if (r.status === 400 && thinking && /thinking/i.test(errText)) { thinking = false; continue; }
@@ -472,6 +482,7 @@ app.whenReady().then(() => {
   if (process.env.LHC_SETTINGS_TEST && settingsWin) settingsWin.webContents.once('did-finish-load', () => setTimeout(() => settingsWin.webContents.executeJavaScript("document.getElementById('test').click()"), 500));
   // Test hooks (dev only): auto-start capture, and dump the transcript on quit.
   if (process.env.LHC_AUTOSTART === '1') panelWin.webContents.once('did-finish-load', () => setTimeout(() => ipcMain.emit('tab-click'), 800));
+  if (process.env.LHC_MIC) panelWin.webContents.once('did-finish-load', () => setTimeout(() => panelWin.webContents.executeJavaScript(`setVol(${Number(process.env.LHC_MIC) || 100}); document.getElementById('mic').click()`), 2500)); // test: turn the mic on
 });
 // Test hook: save PNGs of the app's own windows only (never the whole screen).
 ipcMain.on('dev-shot', async (_e, name) => {

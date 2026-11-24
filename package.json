@@ -1,7 +1,7 @@
 {
   "name": "hindi-captions",
   "productName": "Hindi Captions",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Live Hindi captions for any English audio on a Windows PC (Zoom, Meet, YouTube), with transcript download.",
   "main": "main.js",
   "private": true,

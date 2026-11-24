@@ -23,6 +23,7 @@ The app is **not** in the repository files. It is a separate download:
    - **Pause / Resume** stop and restart listening.
    - **End** finishes the meeting. **Download** then saves Hindi + English as `.txt`, or as `.srt` subtitles.
    - **Mic** also translates your own voice. It is off by default. Use headphones when it is on.
+     While the mic is on, a volume slider (0-400%) and a level bar appear next to it. If the bar barely turns green when you speak, raise the volume.
    - **–** hides the panel and keeps listening.
    - **✕** quits. If you have not downloaded yet, it asks first.
 

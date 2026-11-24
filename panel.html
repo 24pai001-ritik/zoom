@@ -40,6 +40,14 @@
   .icon { width: 34px; padding: 0; }
   #mic { color: rgba(255,255,255,.55); }
   #mic.on { color: #fff; background: var(--live); }
+  .micbox { width: 104px; height: 34px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+  .micbox[hidden] { display: none; }
+  #micvol { width: 100%; height: 14px; margin: 0; accent-color: var(--brand); cursor: pointer; }
+  .microw { display: flex; align-items: center; gap: 5px; }
+  .meter { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
+  #miclvl { display: block; height: 100%; width: 0; background: #9e9e9e; transition: width 60ms linear; }
+  #miclvl[data-ok="1"] { background: #66bb6a; }
+  #micpct { font: 600 10px "Segoe UI", sans-serif; color: var(--dim); min-width: 30px; text-align: right; }
 </style>
 </head>
 <body data-s="idle">
@@ -60,6 +68,10 @@
         <button id="stop" hidden>End</button>
         <button id="dl">Download</button>
         <button id="mic">Mic</button>
+        <div id="micbox" class="micbox" hidden title="Mic volume. Raise it if the green bar barely moves when you speak.">
+          <input id="micvol" type="range" min="0" max="400" step="10" value="100" aria-label="Mic volume">
+          <div class="microw"><div class="meter"><i id="miclvl"></i></div><span id="micpct">100%</span></div>
+        </div>
         <button id="gear" class="icon" title="Settings: Gemini key / server">⚙</button>
         <button id="hide" class="icon" title="Hide the panel. Listening continues; click the हि button to bring it back.">–</button>
         <button id="quit" class="icon" title="Quit">✕</button>
