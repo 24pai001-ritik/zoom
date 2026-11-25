@@ -38,8 +38,8 @@ function onFrame(pcm) {
 
   const bufMs = frames.length * FRAME_MS;
   if (speechMs < 140 && silenceMs >= 800) { frames = []; return; }          // a click (a short "Yes." is ~200 ms and is kept)
-  if (speechMs >= 200 && silenceMs >= 450 && bufMs >= 700) return cut(frames.length);
-  if (bufMs >= 7000) {                                                       // long talk: cut at the quietest spot of the last second
+  if (speechMs >= 200 && silenceMs >= 350 && bufMs >= 700) return cut(frames.length);
+  if (bufMs >= 4000) {                                                       // long talk: cut at the quietest spot of the last second
     let best = frames.length - 1;
     for (let i = frames.length - 50; i < frames.length; i++) if (frames[i].rms < frames[best].rms) best = i;
     cut(best + 1);

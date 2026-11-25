@@ -283,6 +283,44 @@ async function geminiTranscribe(wav) {
   throw new Error('Gemini is busy. Some speech may be missed.');
 }
 
+// Fast path: one Gemini call hears the audio and returns English + Hindi together (saves a round trip).
+async function geminiCaption(wav, context) {
+  const key = geminiKey();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${cfg.geminiModel}:generateContent`;
+  const ask = (context ? `Earlier in the meeting (context only, do not repeat it):\n${context}\n\n` : '') +
+    'Listen to this audio clip. Set "en" to the English speech exactly as spoken, with punctuation, and "hi" to its Hindi translation. If there is no clear speech, set both to "".';
+  const body = (thinking) => JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM.replace('Output only the Hindi translation, nothing else.', '') }] },
+    contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: Buffer.from(wav).toString('base64') } }, { text: ask }] }],
+    generationConfig: {
+      temperature: 0, responseMimeType: 'application/json',
+      responseSchema: { type: 'OBJECT', properties: { en: { type: 'STRING' }, hi: { type: 'STRING' } }, required: ['en', 'hi'] },
+      ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+    },
+  });
+  let thinking = true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let r;
+    try {
+      const t = Date.now();
+      r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: body(thinking), signal: AbortSignal.timeout(12000) });
+      dbg(`gemini-caption ${r.status} ${Date.now() - t}ms bytes=${wav.byteLength}`);
+    } catch (e) { dbg('gemini-caption fail ' + e.name); await new Promise((res) => setTimeout(res, 500)); continue; }
+    if (r.ok) {
+      const j = await r.json();
+      let o = {};
+      try { o = JSON.parse((j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')); } catch { /* empty */ }
+      const en = cleanAsr(String(o.en || '').trim());
+      return { en, hi: en ? String(o.hi || '').trim() : '' };
+    }
+    const errText = await r.text().catch(() => '');
+    if (r.status === 400 && thinking && /thinking/i.test(errText)) { thinking = false; continue; }
+    if (r.status === 429 || r.status >= 500) { await new Promise((res) => setTimeout(res, 800 * (attempt + 1))); continue; }
+    throw new Error('Gemini could not transcribe the audio (' + r.status + ')');
+  }
+  throw new Error('Gemini is busy. Some speech may be missed.');
+}
+
 async function transcribe(wav) {
   if (hubDenied && geminiKey()) return geminiTranscribe(wav);
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -401,6 +439,8 @@ ipcMain.on('tab-click', () => {
     }
     panelWin.showInactive();
     panelWin.webContents.send('cmd', 'start');
+    // Warm the connection to Gemini so the first caption is not slow.
+    if (geminiKey()) fetch(`${GEM}/models/${cfg.geminiModel}`, { headers: { 'x-goog-api-key': geminiKey() }, signal: AbortSignal.timeout(8000) }).catch(() => {});
   } else if (panelWin.isVisible()) panelWin.hide();
   else panelWin.showInactive();
 });
@@ -441,10 +481,23 @@ ipcMain.on('chunk', (_e, { wav, start, end }) => {
   dbg(`chunk ${start.toFixed(1)}-${end.toFixed(1)} waiting=${asrWaiting}`);
   if (asrWaiting >= ASR_QUEUE_MAX) { markGap(start, end); panelWin?.webContents.send('error', 'Too slow to keep up. Some speech is being missed.'); return; }
   asrWaiting++;
+  const got = Date.now();
+  // Start the request now (chunks overlap in flight), but show results in order.
+  const fast = (hubDenied || !hubKey()) && !!geminiKey(); // the gateway needs a key; without one, skip it
+  const job = fast ? geminiCaption(Buffer.from(wav), log.slice(-2).map((e) => e.en).join(' ')) : transcribe(Buffer.from(wav));
+  job.catch(() => {});
   asrChain = asrChain.then(async () => {
     try {
-      const en = await transcribe(Buffer.from(wav));
-      addEnglish({ start, end, en });
+      const res = await job;
+      if (fast) {
+        if (res.en) {
+          flushPending(); await trChain;
+          const entry = { start, end, en: res.en, hi: res.hi };
+          log.push(entry); downloaded = false; autosave();
+          panelWin?.webContents.send('segment', entry);
+          dbg(`caption shown ${Date.now() - got}ms after chunk`);
+        }
+      } else addEnglish({ start, end, en: res });
       panelWin?.webContents.send('hub-ok');
     } catch (e) {
       markGap(start, end);
